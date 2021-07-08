@@ -1,9 +1,9 @@
 ---
 - hosts: all
   tasks:
-    - name: Install Python3 #Nom de la tâche
-      become: yes #Autoriser privilege escalation
-      apt: name=python3 update_cache=yes state=latest #Installe la dernière version du package python3 et s'assure que le cache est mis à jour
+    - name: Install Python3
+      become: yes
+      apt: name=python3 update_cache=yes state=latest
 
     - name: Install Git package
       become: yes
@@ -15,31 +15,55 @@
 
     - name: enabled mod_rewrite
       become: yes
-      apache2_module: name=rewrite state=present #Vérifie que le module mod_rewrite est installé
+      apache2_module: name=rewrite state=present
 
-    - name: apache2 listen on port 443
-      become: yes
-      lineinfile: dest=/etc/apache2/ports.conf regexp="^Listen 80" line="Listen 443" state=present #Change le port d’écoute d’Apache2 sur le port 443
+#    - name: apache2 listen on port {{ app_port }}
+#      become: yes
+#      lineinfile: dest=/etc/apache2/ports.conf regexp="^Listen 80" line="Listen {{ app_port }}" state=present
 
-    - name: apache2 virtualhost on port 443
+#    - name: apache2 virtualhost on port {{ app_port }}
+#      become: yes
+#      lineinfile: dest=/etc/apache2/sites-available/000-default.conf regexp="^<VirtualHost \*:80>" line="<VirtualHost *:{{ app_port }}>" state=present
+
+    - name: remove default Apache port.conf
       become: yes
-      lineinfile: dest=/etc/apache2/sites-available/000-default.conf regexp="^<VirtualHost \*:80>" line="<VirtualHost *:443>" state=present #Changer le port d’écoute du Virtualhost sur le port 443
+      file:
+        path: /etc/apache2/ports.conf
+        state: absent
+
+    - name: remove default Apache default.conf
+      become: yes
+      file:
+        path: /etc/apache2/sites-available/000-default.conf
+        state: absent
+
+    - name: Create Apache port.conf
+      become: yes
+      template:
+        src: templates/ports.conf.j2
+        dest: /etc/apache2/ports.conf
+
+    - name: Create Apache default.conf
+      become: yes
+      template:
+        src: templates/000-default.conf.j2
+        dest: /etc/apache2/sites-available/000-default.conf
 
     - name: remove default website directory
       become: yes
       file:
         path: /var/www/html
-        state: absent #Supprimer le default website d’Apache
+        state: absent
 
-    - name: Git checkout website #Déployer un website
+    - name: Git checkout website
       become: yes
       git:
-        repo: https://github.com/cloudacademy/static-website-example
+        repo: "{{ app_repo }}"
         dest: /var/www/html
       notify:
-        - restart apache2 #Redémarrer le service Apache2
+        - restart apache2
 
   handlers:
-    - name: restart apache2 #Redémarrer le service Apache2
+    - name: restart apache2
       become: yes
       service: name=apache2 state=restarted
