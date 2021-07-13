@@ -3,6 +3,7 @@
         "region": "eu-west-1",
         "ssh_username": "ubuntu",
         "instance_type": "t2.micro",
+	"subnet_id": "subnet-0573c0c701fafbf0c",
         "temporary_security_group_source_cidrs": "{{user `ec2_ip`}}/32",
         "associate_public_ip_address": "true"
     },
@@ -10,6 +11,7 @@
         {
             "type": "amazon-ebs",
             "region": "{{user `region`}}",
+	    "subnet_id": "{{user `subnet_id`}}",
 	    "source_ami_filter": {
     	    	"filters": {
             		"virtualization-type": "hvm",
